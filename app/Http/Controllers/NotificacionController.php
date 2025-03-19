@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Notificacion;
+use App\Models\Usuario;
 use Illuminate\Http\Request;
+use App\Mail\NotificacionMail;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class NotificacionController extends Controller
 {
@@ -24,6 +28,19 @@ class NotificacionController extends Controller
             'mensaje' => $request->mensaje,
             'leida' => false
         ]);
+
+        // Enviar correo electrónico
+        $usuario = Usuario::find($request->usuario_id);
+        if ($usuario && !empty($usuario->email)) {
+            try {
+                Mail::to($usuario->email)->send(new NotificacionMail($request->mensaje));
+            } catch (\Exception $e) {
+                Log::error("Error enviando email: " . $e->getMessage());
+                return response()->json([
+                    'message' => 'Notificación creada, pero hubo un error enviando el correo.'
+                ], 201);
+            }
+        }
 
         return response()->json($notificacion, 201);
     }
