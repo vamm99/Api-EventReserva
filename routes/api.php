@@ -13,8 +13,17 @@ Route::post('login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
 
-    Route::apiResource('usuarios', UsuarioController::class);
-    Route::apiResource('eventos', EventoController::class);
+    // Rutas solo para administradores
+    Route::middleware('rol:admin')->group(function () {
+        Route::apiResource('usuarios', UsuarioController::class);
+    });
+
+    // Rutas para organizadores y administradores
+    Route::middleware('rol:admin,organizador')->group(function () {
+        Route::apiResource('eventos', EventoController::class);
+        Route::apiResource('notificaciones', NotificacionController::class);
+    });
+
+    // Rutas accesibles para todos los usuarios autenticados
     Route::apiResource('reservas', ReservaController::class);
-    Route::apiResource('notificaciones', NotificacionController::class);
 });

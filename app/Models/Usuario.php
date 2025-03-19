@@ -20,4 +20,14 @@ class Usuario extends Authenticatable
     protected $hidden = [
         'password',
     ];
+
+    public function esAdmin()
+    {
+        return $this->rol === 'admin';
+    }
+
+    public function esUsuario()
+    {
+        return $this->rol === 'usuario';
+    }
 }
