@@ -13,6 +13,7 @@ Route::post('login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
 
     // Rutas solo para administradores
     Route::middleware('rol:admin')->group(function () {
@@ -22,11 +23,16 @@ Route::middleware('auth:sanctum')->group(function () {
     // Rutas para organizadores y administradores
     Route::middleware('rol:admin,organizador')->group(function () {
         Route::apiResource('eventos', EventoController::class);
-        Route::apiResource('notificaciones', NotificacionController::class);
     });
 
     // Rutas accesibles para todos los usuarios autenticados
     Route::apiResource('reservas', ReservaController::class);
+
+    // Rutas de notificaciones (para cualquier usuario autenticado)
+    Route::get('notificaciones', [NotificacionController::class, 'index']); // Listar notificaciones del usuario autenticado
+    Route::get('notificaciones/{id}', [NotificacionController::class, 'show']); // Ver una notificación específica
+    Route::put('notificaciones/{id}/leida', [NotificacionController::class, 'marcarComoLeida']); // Marcar como leída
+    Route::delete('notificaciones/{id}', [NotificacionController::class, 'destroy']); // Eliminar notificación
 
     // Rutas de reportes
     Route::middleware('rol:admin,organizador')->group(function () {

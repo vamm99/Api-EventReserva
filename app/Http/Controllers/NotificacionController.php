@@ -3,63 +3,57 @@
 namespace App\Http\Controllers;
 
 use App\Models\Notificacion;
-use App\Models\Usuario;
 use Illuminate\Http\Request;
-use App\Mail\NotificacionMail;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class NotificacionController extends Controller
 {
+    /**
+     * Obtener todas las notificaciones de un usuario autenticado.
+     */
     public function index()
     {
-        return Notificacion::all();
+        $usuarioId = Auth::id(); // Obtener el usuario autenticado
+        return response()->json(Notificacion::where('usuario_id', $usuarioId)->orderBy('created_at', 'desc')->get());
     }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'usuario_id' => 'required|exists:usuarios,id',
-            'mensaje' => 'required|string',
-        ]);
-
-        $notificacion = Notificacion::create([
-            'usuario_id' => $request->usuario_id,
-            'mensaje' => $request->mensaje,
-            'leida' => false
-        ]);
-
-        // Enviar correo electrónico
-        $usuario = Usuario::find($request->usuario_id);
-        if ($usuario && !empty($usuario->email)) {
-            try {
-                Mail::to($usuario->email)->send(new NotificacionMail($request->mensaje));
-            } catch (\Exception $e) {
-                Log::error("Error enviando email: " . $e->getMessage());
-                return response()->json([
-                    'message' => 'Notificación creada, pero hubo un error enviando el correo.'
-                ], 201);
-            }
-        }
-
-        return response()->json($notificacion, 201);
-    }
-
+    /**
+     * Obtener una notificación específica.
+     */
     public function show($id)
     {
-        return Notificacion::findOrFail($id);
-    }
+        $notificacion = Notificacion::where('id', $id)
+            ->where('usuario_id', Auth::id()) // Solo permitir ver sus propias notificaciones
+            ->firstOrFail();
 
-    public function update(Request $request, $id)
-    {
-        $notificacion = Notificacion::findOrFail($id);
-        $notificacion->update($request->all());
         return response()->json($notificacion);
     }
 
+    /**
+     * Marcar una notificación como leída.
+     */
+    public function marcarComoLeida($id)
+    {
+        $notificacion = Notificacion::where('id', $id)
+            ->where('usuario_id', Auth::id()) // Solo permitir marcar sus propias notificaciones
+            ->firstOrFail();
+
+        $notificacion->update(['leida' => true]);
+
+        return response()->json(['message' => 'Notificación marcada como leída']);
+    }
+
+    /**
+     * Eliminar una notificación.
+     */
     public function destroy($id)
     {
-        Notificacion::destroy($id);
+        $notificacion = Notificacion::where('id', $id)
+            ->where('usuario_id', Auth::id()) // Solo permitir eliminar sus propias notificaciones
+            ->firstOrFail();
+
+        $notificacion->delete();
+
         return response()->json(['message' => 'Notificación eliminada']);
     }
 }

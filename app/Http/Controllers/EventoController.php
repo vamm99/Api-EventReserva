@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Evento;
+use App\Models\Notificacion;
+use App\Models\Usuario;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\NotificacionMail;
 
 class EventoController extends Controller
 {
@@ -16,11 +20,9 @@ class EventoController extends Controller
     {
         $request->validate([
             'titulo' => 'required|string|max:255',
-            'descripcion' => 'nullable|string',
-            'fecha_inicio' => 'required|date',
-            'fecha_fin' => 'required|date|after:fecha_inicio',
+            'descripcion' => 'required|string',
+            'fecha_hora' => 'required|date',
             'capacidad' => 'required|integer|min:1',
-            'organizador_id' => 'required|exists:usuarios,id',
         ]);
 
         $evento = Evento::create($request->all());
@@ -36,12 +38,66 @@ class EventoController extends Controller
     {
         $evento = Evento::findOrFail($id);
         $evento->update($request->all());
+
+        // Notificar a todos los usuarios con reserva en este evento
+        $usuarios = Usuario::whereHas('reservas', function ($query) use ($id) {
+            $query->where('evento_id', $id);
+        })->get();
+
+        if ($usuarios->count() > 0) {
+            $mensaje = "El evento '{$evento->titulo}' ha sido actualizado. Revisa los nuevos detalles.";
+
+            foreach ($usuarios as $usuario) {
+                Notificacion::create([
+                    'usuario_id' => $usuario->id,
+                    'mensaje' => $mensaje,
+                    'leida' => false
+                ]);
+
+                try {
+                    Mail::to($usuario->email)->send(new NotificacionMail($mensaje));
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'message' => 'Evento actualizado, pero hubo un error enviando los correos.',
+                        'error' => $e->getMessage()
+                    ], 201);
+                }
+            }
+        }
+
         return response()->json($evento);
     }
 
     public function destroy($id)
     {
-        Evento::destroy($id);
+        $evento = Evento::findOrFail($id);
+        $usuarios = Usuario::whereHas('reservas', function ($query) use ($id) {
+            $query->where('evento_id', $id);
+        })->get();
+
+        $evento->delete();
+
+        if ($usuarios->count() > 0) {
+            $mensaje = "El evento '{$evento->titulo}' ha sido cancelado.";
+
+            foreach ($usuarios as $usuario) {
+                Notificacion::create([
+                    'usuario_id' => $usuario->id,
+                    'mensaje' => $mensaje,
+                    'leida' => false
+                ]);
+
+                try {
+                    Mail::to($usuario->email)->send(new NotificacionMail($mensaje));
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'message' => 'Evento eliminado, pero hubo un error enviando los correos.',
+                        'error' => $e->getMessage()
+                    ], 201);
+                }
+            }
+        }
+
         return response()->json(['message' => 'Evento eliminado']);
     }
 }

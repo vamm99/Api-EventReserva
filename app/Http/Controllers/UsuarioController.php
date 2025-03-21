@@ -41,6 +41,12 @@ class UsuarioController extends Controller
     public function update(Request $request, $id)
     {
         $usuario = Usuario::findOrFail($id);
+
+        // Verificar si el campo 'password' está presente en la solicitud
+        if ($request->has('password')) {
+            $request->merge(['password' => Hash::make($request->password)]);
+        }
+
         $usuario->update($request->all());
         return response()->json($usuario);
     }
