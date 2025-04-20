@@ -20,4 +20,9 @@ class Usuario extends Authenticatable
     protected $hidden = [
         'password',
     ];
+
+    public function reservas()
+    {
+        return $this->hasMany(Reserva::class, 'usuario_id');
+    }
 }

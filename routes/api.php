@@ -21,18 +21,24 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Rutas para organizadores y administradores
-    Route::middleware('rol:admin,organizador')->group(function () {
+    Route::middleware('rol:admin,organizador,usuario')->group(function () {
         Route::apiResource('eventos', EventoController::class);
     });
 
+    Route::get('eventos/{id}/capacidad', [EventoController::class, 'getCapacidad']);
+
     // Rutas accesibles para todos los usuarios autenticados
     Route::apiResource('reservas', ReservaController::class);
+    Route::get('reservas/usuario/{usuario_id}', [ReservaController::class, 'getReservasByUsuario']);
 
     // Rutas de notificaciones (para cualquier usuario autenticado)
     Route::get('notificaciones', [NotificacionController::class, 'index']); // Listar notificaciones del usuario autenticado
     Route::get('notificaciones/{id}', [NotificacionController::class, 'show']); // Ver una notificación específica
     Route::put('notificaciones/{id}/leida', [NotificacionController::class, 'marcarComoLeida']); // Marcar como leída
     Route::delete('notificaciones/{id}', [NotificacionController::class, 'destroy']); // Eliminar notificación
+    // Ruta para actualizar la contraseña
+    Route::put('password/{id}', [UsuarioController::class, 'updatePassword']);
+
 
     // Rutas de reportes
     Route::middleware('rol:admin,organizador')->group(function () {

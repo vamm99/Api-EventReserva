@@ -38,6 +38,17 @@ class UsuarioController extends Controller
         return Usuario::findOrFail($id);
     }
 
+    // Función para actualizar solo la contraseña
+    public function updatePassword(Request $request, $id)
+    {
+        $usuario = Usuario::findOrFail($id);
+        $request->validate([
+            'password' => 'required|string|min:6',
+        ]);
+        $usuario->update(['password' => Hash::make($request->password)]);
+        return response()->json(['message' => 'Contraseña actualizada correctamente']);
+    }
+
     public function update(Request $request, $id)
     {
         $usuario = Usuario::findOrFail($id);

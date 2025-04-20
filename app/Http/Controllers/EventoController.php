@@ -13,7 +13,7 @@ class EventoController extends Controller
 {
     public function index()
     {
-        return Evento::all();
+        return Evento::orderBy('created_at', 'desc')->get();
     }
 
     public function store(Request $request)
@@ -21,12 +21,26 @@ class EventoController extends Controller
         $request->validate([
             'titulo' => 'required|string|max:255',
             'descripcion' => 'required|string',
-            'fecha_hora' => 'required|date',
+            'fecha_inicio' => 'required|date',
+            'fecha_fin' => 'required|date',
             'capacidad' => 'required|integer|min:1',
+            'organizador_id' => 'required|exists:usuarios,id'
         ]);
 
-        $evento = Evento::create($request->all());
-        return response()->json($evento, 201);
+
+        $evento = Evento::create([
+            'titulo' => $request->titulo,
+            'descripcion' => $request->descripcion,
+            'capacidad' => $request->capacidad,
+            'fecha_inicio' => $request->fecha_inicio,
+            'fecha_fin' => $request->fecha_fin,
+            'organizador_id' => $request->organizador_id
+        ]);
+
+        return response()->json([
+            'eventos' => $evento,
+            'message' => 'Evento creado con éxito!'
+        ], 201);
     }
 
     public function show($id)
@@ -66,6 +80,13 @@ class EventoController extends Controller
         }
 
         return response()->json($evento);
+    }
+
+    // Funcion para obtner la capacidad de cada evento
+    public function getCapacidad($id)
+    {
+        $evento = Evento::findOrFail($id);
+        return response()->json($evento->capacidad);
     }
 
     public function destroy($id)
