@@ -11,7 +11,8 @@ class UsuarioController extends Controller
 {
     public function index()
     {
-        return Usuario::all();
+        // Traer todos los usuarios con rol usuario
+        return Usuario::where('rol', 'usuario')->get();
     }
 
     public function store(Request $request)
