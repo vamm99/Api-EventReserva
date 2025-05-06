@@ -2,7 +2,7 @@ services:
   - type: web
     name: event-reservas
     env: php
-    rootDir: EventReservas
+    rootDir: Api-EventReserva
     buildCommand: |
       composer install --no-dev --optimize-autoloader
       php artisan config:cache
