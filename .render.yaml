@@ -1,0 +1,111 @@
+services:
+  - type: web
+    name: event-reservas
+    env: php
+    rootDir: EventReservas
+    buildCommand: |
+      composer install --no-dev --optimize-autoloader
+      php artisan config:cache
+      php artisan route:cache
+      php artisan view:cache
+      php artisan migrate --force
+    startCommand: php artisan serve --host=0.0.0.0 --port=10000
+    envVars:
+      - key: APP_NAME
+        value: Laravel
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        value: https://event-reservas.onrender.com
+      - key: APP_KEY
+        generateValue: true
+
+      - key: APP_LOCALE
+        value: en
+      - key: APP_FALLBACK_LOCALE
+        value: en
+      - key: APP_FAKER_LOCALE
+        value: en_US
+
+      - key: LOG_CHANNEL
+        value: stack
+      - key: LOG_LEVEL
+        value: info
+
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        fromDatabase:
+          name: event-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: event-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: event-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: event-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: event-db
+          property: password
+
+      - key: SESSION_DRIVER
+        value: database
+      - key: SESSION_LIFETIME
+        value: 120
+      - key: SESSION_ENCRYPT
+        value: false
+      - key: SESSION_PATH
+        value: /
+      - key: SESSION_DOMAIN
+        value: null
+
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 465
+      - key: MAIL_USERNAME
+        value: victoralfonsomejiamorales@gmail.com
+      - key: MAIL_PASSWORD
+        value: yjzs crzw vzej iglw
+      - key: MAIL_ENCRYPTION
+        value: ssl
+      - key: MAIL_FROM_ADDRESS
+        value: victoralfonsomejiamorales@gmail.com
+      - key: MAIL_FROM_NAME
+        value: Laravel
+
+      - key: REDIS_CLIENT
+        value: phpredis
+      - key: REDIS_HOST
+        value: 127.0.0.1
+      - key: REDIS_PORT
+        value: 6379
+
+      - key: VITE_APP_NAME
+        value: Laravel
+
+    plan: free
+
+databases:
+  - name: event-db
+    plan: free
+    engine: mysql
+    databaseName: eventreservas
+    user: event_user
+    ipAllowList: []

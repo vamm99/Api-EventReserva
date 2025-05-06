@@ -22,4 +22,9 @@ class Evento extends Model
     {
         return $this->belongsTo(Usuario::class, 'organizador_id');
     }
+
+    public function reservas()
+    {
+        return $this->hasMany(Reserva::class);
+    }
 }

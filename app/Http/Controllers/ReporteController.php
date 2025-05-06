@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\DB;
+
 use Illuminate\Http\Request;
 use App\Models\Evento;
 use App\Models\Reserva;
@@ -53,16 +55,73 @@ class ReporteController extends Controller
             $handle = fopen('php://output', 'w');
 
             if ($tipo === 'reservas') {
-                fputcsv($handle, ['Evento ID', 'Total Reservas']);
-                fputcsv($handle, [$id, Reserva::where('evento_id', $id)->count()]);
+                fputcsv($handle, ['Evento ID', 'Nombre Evento', 'Total Reservas', 'Reservas Confirmadas', 'Reservas Pendientes']);
+                $evento = Evento::withCount([
+                    'reservas',
+                    'reservas as reservas_confirmadas_count' => function ($query) {
+                        $query->where('estado', 'confirmada');
+                    },
+                    'reservas as reservas_pendientes_count' => function ($query) {
+                        $query->where('estado', 'pendiente');
+                    }
+                ])->find($id);
+                
+                fputcsv($handle, [
+                    $evento->id,
+                    $evento->titulo,
+                    $evento->reservas_count,
+                    $evento->reservas_confirmadas_count,
+                    $evento->reservas_pendientes_count
+                ]);
             } elseif ($tipo === 'asistencia') {
-                fputcsv($handle, ['Evento ID', 'Asistencias Confirmadas']);
-                fputcsv($handle, [$id, Reserva::where('evento_id', $id)->where('estado', 'confirmada')->count()]);
+                fputcsv($handle, ['Evento ID', 'Nombre Evento', 'Total Asistentes', 'Asistencia por Estado']);
+                
+                // Primero obtenemos las estadísticas de asistencia
+                $asistencia = Reserva::select('estado', DB::raw('COUNT(*) as count'))
+                    ->where('evento_id', $id)
+                    ->groupBy('estado')
+                    ->get()
+                    ->pluck('count', 'estado')
+                    ->toArray();
+                
+                // Luego obtenemos la información del evento
+                $evento = Evento::find($id);
+                
+                fputcsv($handle, [
+                    $evento->id,
+                    $evento->titulo,
+                    array_sum($asistencia),
+                    json_encode($asistencia)
+                ]);
             } elseif ($tipo === 'actividad') {
-                fputcsv($handle, ['Usuario ID', 'Nombre', 'Email', 'Reservas Hechas']);
-                $usuarios = Usuario::withCount('reservas')->get(['id', 'nombre', 'email', 'reservas_count']);
+                fputcsv($handle, ['Usuario ID', 'Nombre', 'Email', 'Total Reservas', 'Reservas Confirmadas', 'Reservas Pendientes', 'Última Reserva']);
+                $usuarios = Usuario::with([
+                    'reservas' => function ($query) {
+                        $query->orderBy('created_at', 'desc')->limit(1);
+                    },
+                    'reservas.evento' => function ($query) {
+                        $query->select('id', 'titulo');
+                    }
+                ])->withCount([
+                    'reservas',
+                    'reservas as reservas_confirmadas_count' => function ($query) {
+                        $query->where('estado', 'confirmada');
+                    },
+                    'reservas as reservas_pendientes_count' => function ($query) {
+                        $query->where('estado', 'pendiente');
+                    }
+                ])->get(['id', 'nombre', 'email']);
+                
                 foreach ($usuarios as $usuario) {
-                    fputcsv($handle, [$usuario->id, $usuario->nombre, $usuario->email, $usuario->reservas_count]);
+                    fputcsv($handle, [
+                        $usuario->id,
+                        $usuario->nombre,
+                        $usuario->email,
+                        $usuario->reservas_count,
+                        $usuario->reservas_confirmadas_count,
+                        $usuario->reservas_pendientes_count,
+                        $usuario->reservas->first() ? $usuario->reservas->first()->created_at->format('Y-m-d H:i:s') : '',
+                    ]);
                 }
             }
 
