@@ -46,5 +46,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/reportes/asistencia/{evento_id}', [ReporteController::class, 'asistenciaPorEvento']);
         Route::get('/reportes/actividad-usuarios', [ReporteController::class, 'actividadUsuarios']);
         Route::get('/reportes/exportar/{tipo}/{id?}', [ReporteController::class, 'exportarCSV']);
+        Route::get('reporte/reservas-por-fecha/{fecha_unix}', [ReporteController::class, 'reservasPorFechaUnix']);
     });
 });

@@ -132,4 +132,25 @@ class ReporteController extends Controller
         $response->headers->set('Content-Disposition', 'attachment; filename="reporte_' . $tipo . '.csv"');
         return $response;
     }
+
+    public function reservasPorFechaUnix($fecha_unix)
+    {
+        $fecha = Carbon::createFromTimestamp($fecha_unix)->toDateString();
+
+        // Obtener reservas agrupadas por evento en esa fecha
+        $reservas = Reserva::select('evento_id', DB::raw('count(*) as total'))
+            ->whereDate('created_at', $fecha)
+            ->groupBy('evento_id')
+            ->with('evento:id,titulo')
+            ->get()
+            ->map(function ($reserva) {
+                return [
+                    'evento_id' => $reserva->evento_id,
+                    'evento' => $reserva->evento ? $reserva->evento->titulo : 'Sin evento',
+                    'total' => $reserva->total
+                ];
+            });
+
+        return response()->json($reservas);
+    }
 }
